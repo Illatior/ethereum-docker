@@ -1,0 +1,5 @@
+/rabbitmq/data
+/postgres/data
+/logs
+
+tasks
