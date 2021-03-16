@@ -1,12 +1,33 @@
 import os
+import json
 
 from time import sleep
 
 import pika
-from redis import Redis
 import psycopg2
 
+from redis import Redis
+
 redis = None
+db = None
+
+
+class Block:
+    def __init__(self, number, time):
+        self.block_number = number
+        self.block_time = time
+
+    def __str__(self):
+        return '{}, {}'.format(self.block_number, self.block_time)
+
+
+def setup_redis():
+    redis =  Redis(host=os.environ['REDIS_HOST'], port=os.environ['REDIS_PORT'], db=0)
+
+    if not redis.get('nonce'):
+        redis.set('nonce', 0)
+
+    return redis
 
 def setup_db():
     database = os.environ['DB_NAME']
@@ -32,10 +53,8 @@ def setup_rmq():
     if vhost == '/':
         vhost = ''
     
-    
-    credentials = pika.PlainCredentials(user, password)
     parameters = pika.URLParameters('amqp://{}:{}@{}:{}/{}'.format(user, password, host, port, vhost))
-    print(str(parameters))
+    
     rmq_connection = pika.BlockingConnection(parameters)   
     channel = rmq_connection.channel()
 
@@ -50,18 +69,42 @@ def setup_rmq():
 
 
 def block_received_callback(ch, method, properties, body):
-    print(' [x] Received %r' % body)
-    redis.set('last-block', 'asfasf')
+    message = body.decode('utf-8')    
+    print(' [x] Received %r' % message)
+
+    block = None
+    try:
+        json_message = json.loads(message)
+        block = Block(json_message['block_id'], json_message['block_time'])
+    except Exception as e:
+        print(str(e))
+        return 
+
+    write_block_to_db(block)
+    redis.set('nonce', int(redis.get('nonce')) + 1)
+
+
+def write_block_to_db(block: Block):
+    with db.cursor() as cursor:
+        db.autocommit = True
+        sql = '''
+            INSERT INTO
+                blocks(block_id, block_time)
+            VALUES
+                ({})
+            '''.format(str(block))
+
+        cursor.execute(sql)
 
 
 def main():
     print('waiting to db and rmq init')
     sleep(10)
 
+    global redis, db
     db = setup_db()
     rmq_channel = setup_rmq()
-    global redis
-    redis = Redis(host=os.environ['REDIS_HOST'], port=os.environ['REDIS_PORT'], db=0)
+    redis = setup_redis()
 
     print('Starting listeting for blocks.')
     rmq_channel.start_consuming()
