@@ -4,12 +4,7 @@ WORKDIR .
 COPY requirements.txt .
 COPY main.py .
 
-RUN apk update && \
-    apk add --virtual .build-deps gcc python3-dev musl-dev && \
-    apk add postgresql-dev
 RUN pip3 install --no-cache-dir -r requirements.txt
-
-RUN apk del .build-deps
 
 
 CMD [ "python3", "-u", "./main.py"]
