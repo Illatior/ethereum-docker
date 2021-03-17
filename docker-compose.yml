@@ -4,18 +4,8 @@ services:
     build: ./block-consumer
     container_name: block-consumer
 
-    environment:
-      - DB_NAME=postgres
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_HOST=postgresql
-      - RMQ_HOST=rabbitmq
-      - RMQ_PORT=5672
-      - RMQ_VHOST=/
-      - RMQ_USER=admin
-      - RMQ_PASSWORD=adminpassword
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+    env_file:
+      - ./configs/block-consumer/.env
     
     networks:
       postgres_net:
@@ -24,8 +14,6 @@ services:
         ipv4_address: 172.30.1.16
       redis_net:
         ipv4_address: 172.28.1.16
-
-
 
   rabbitmq:
     container_name: rabbitmq
@@ -50,12 +38,15 @@ services:
     image: "redis:alpine"
     hostname: redis
 
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+
     volumes:
       - ./data/redis:/var/lib/redis
       - ./configs/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./logs/redis/:/var/log/redis/
 
-    environment:
-      - REDIS_REPLICATION_MODE=master
+    env_file:
+      - ./configs/redis/.env
 
     ports:
       - 6379:6379
@@ -72,11 +63,8 @@ services:
       - ./configs/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./data/postgres/pgsql:/var/lib/postgresql/data
 
-    environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - PGDATA=/var/lib/postgresql/data
+    env_file:
+      - ./configs/postgres/.env
 
     ports:
       - 5432:5432
@@ -93,10 +81,8 @@ services:
     volumes:
       - ./data/postgres/admin:/root/.pgadmin
 
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: root
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    env_file:
+      - ./configs/postgres/.pg-admin.env
 
     ports:
       - "5050:80"
