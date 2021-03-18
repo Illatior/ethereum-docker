@@ -1,11 +1,107 @@
 version: "3.8"
-services:    
-  block-consumer:
-    build: ./block-consumer
-    container_name: block-consumer
+services:
+
+  node_1:
+    container_name: node_1
+    restart: on-failure
+    build: ./bch
 
     env_file:
-      - ./configs/block-consumer/.env
+      - .env
+
+    entrypoint:
+      - /bin/sh
+      - -c
+      - geth ${NODE_1}
+
+    healthcheck:
+      test: curl localhost:8545
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+    volumes:
+      - ./data/geth/node_1:/root/.ethereum
+      - ./configs/bch/genesis.json:/root/.ethereum/genesis.json
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.5
+
+  node_2:
+    container_name: node_2
+    restart: on-failure
+    build: ./bch
+
+    entrypoint:
+      - /bin/sh
+      - -c
+      - geth ${NODE_2}
+
+    volumes:
+      - ./data/geth/node_2:/root/.ethereum
+      - ./configs/bch/genesis.json:/root/.ethereum/genesis.json
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.6
+
+  miner_1:
+    container_name: miner_1
+    restart: on-failure
+    build: ./bch
+
+    volumes:
+      - ./data/geth/miner_1:/root/.ethereum
+      - ./configs/bch/genesis.json:/root/.ethereum/genesis.json
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.7
+
+  miner_2:
+    container_name: miner_2
+    restart: on-failure
+    build: ./bch
+
+    volumes:
+      - ./data/geth/miner_2:/root/.ethereum
+      - ./configs/bch/genesis.json:/root/.ethereum/genesis.json
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.8
+
+  miner_3:
+    container_name: miner_3
+    restart: on-failure
+    build: ./bch
+
+    volumes:
+      - ./data/geth/miner_3:/root/.ethereum
+      - ./configs/bch/genesis.json:/root/.ethereum/genesis.json
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.9
+
+  block-consumer:
+    build: ./block-consumer
+    restart: on-failure
+    container_name: block-consumer
+
+    environment:
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=postgresql
+      - RMQ_HOST=rabbitmq
+      - RMQ_PORT=5672
+      - RMQ_VHOST=/
+      - RMQ_USER=admin
+      - RMQ_PASSWORD=adminpassword
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
 
     depends_on:
       postgres-db:
@@ -23,8 +119,37 @@ services:
       redis_net:
         ipv4_address: 172.28.1.16
 
+  block-polling-service:
+    build: ./block-polling-service
+    restart: on-failure
+    container_name: block-polling-service
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      node_1:
+        condition: service_started
+
+    environment:
+      - NODE_HOST=172.31.1.5
+      - NODE_RPC_PORT=8545
+      - GET_BLOCKS_TIMEOUT=10
+      - SEND_BLOCKS_TIMEOUT=5
+      - RMQ_HOST=rabbitmq
+      - RMQ_PORT=5672
+      - RMQ_USER=admin
+      - RMQ_PASSWORD=adminpassword
+      - RMQ_VHOST=/
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.16
+      rmq_net:
+        ipv4_address: 172.30.1.17
+
   rabbitmq:
     container_name: rabbitmq
+    restart: on-failure
     image: "rabbitmq:3-management-alpine"
     hostname: rabbitmq
 
@@ -40,8 +165,7 @@ services:
       timeout: 30s
       retries: 3
 
-    ports: 
-      - 5672:5672
+    ports:
       - 15672:15672
     networks:
       rmq_net:
@@ -49,6 +173,7 @@ services:
   
   redis:
     container_name: redis
+    restart: on-failure
     image: "redis:alpine"
     hostname: redis
 
@@ -68,16 +193,14 @@ services:
       timeout: 3s
       retries: 30
 
-    ports:
-      - 6379:6379
     networks:
       redis_net:
         ipv4_address: 172.28.1.4
   
   postgres-db:
     container_name: postgresql
+    restart: on-failure
     image: "postgres:9.6.21-alpine"
-    restart: unless-stopped
 
     env_file:
       - ./configs/postgres/.env
@@ -92,8 +215,6 @@ services:
       timeout: 5s
       retries: 5
 
-    ports:
-      - 5432:5432
     networks:
       postgres_net:
         ipv4_address: 172.29.1.4
@@ -101,8 +222,8 @@ services:
 
   postgres-admin:
     container_name: pgadmin
+    restart: on-failure
     image: dpage/pgadmin4
-    restart: unless-stopped
 
     volumes:
       - ./data/postgres/admin:/root/.pgadmin
@@ -110,13 +231,18 @@ services:
     env_file:
       - ./configs/postgres/.pg-admin.env
 
-    ports:
-      - "5050:80"
     networks:
       postgres_net:
         ipv4_address: 172.29.1.5
 
 networks:
+  bch_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.0.0/16
+          gateway: 172.31.0.1
+
   postgres_net:
     ipam:
       driver: default
