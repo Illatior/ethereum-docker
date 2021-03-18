@@ -6,7 +6,15 @@ services:
 
     env_file:
       - ./configs/block-consumer/.env
-    
+
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
     networks:
       postgres_net:
         ipv4_address: 172.29.1.16
@@ -25,7 +33,13 @@ services:
       - ./configs/rmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
       - ./data/rmq:/var/lib/rabbitmq/mnesia/rabbit@rabbitmq
       - ./logs/rabbitmq:/var/log/rabbitmq/log
-    
+
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 30s
+      retries: 3
+
     ports: 
       - 5672:5672
       - 15672:15672
@@ -48,6 +62,12 @@ services:
     env_file:
       - ./configs/redis/.env
 
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
     ports:
       - 6379:6379
     networks:
@@ -59,12 +79,18 @@ services:
     image: "postgres:9.6.21-alpine"
     restart: unless-stopped
 
+    env_file:
+      - ./configs/postgres/.env
+
     volumes:
       - ./configs/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./data/postgres/pgsql:/var/lib/postgresql/data
 
-    env_file:
-      - ./configs/postgres/.env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
     ports:
       - 5432:5432

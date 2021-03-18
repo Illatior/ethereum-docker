@@ -1,4 +1,5 @@
 import os
+import pika
 
 from time import sleep
 from web3 import Web3
@@ -51,8 +52,8 @@ def init_rmq():
     return channel
 
 
-def get_block(w3, id='latest')
-    return w3.eth.get_block(id)
+def get_block(w3, block_id='latest'):
+    return w3.eth.getBlock(block_id)
 
 
 def get_blocks_task(w3):
@@ -68,7 +69,7 @@ def get_blocks_task(w3):
                 blocks_to_send.append(0, get_block(w3, block_number))
 
 
-def send_blocks_task(rmq):
+def send_blocks_task(channel):
     while True:
         sleep(send_blocks_timeout)
         if threads_stopped:
@@ -86,19 +87,17 @@ def exit_():
     threads_stopped = True
 
 def main():
-    sleep(20)
-
     w3 = init_w3()
     print(dir(w3.eth))
     rmq = init_rmq()
 
     get_blocks_thread = Thread(get_blocks_task, args=[w3])
     send_blocks_thread = Thread(send_blocks_task, args=[rmq])
-    threads.append(get_blocks_thread
+    threads.append(get_blocks_thread)
     threads.append(send_blocks_thread)
 
     for thread in threads:
-        threads.run()
+        thread.run()
 
     while True:
         try:

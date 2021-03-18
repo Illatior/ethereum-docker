@@ -98,9 +98,6 @@ def write_block_to_db(block: Block):
 
 
 def main():
-    print('waiting to db and rmq init')
-    sleep(10)
-
     global redis, db
     db = setup_db()
     rmq_channel = setup_rmq()
