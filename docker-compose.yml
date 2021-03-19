@@ -157,22 +157,12 @@ services:
         ipv4_address: 172.31.1.9
 
   block-consumer:
-    build: ./block-consumer
+    build: block-consumer
     restart: on-failure
     container_name: block-consumer
 
-    environment:
-      - DB_NAME=postgres
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_HOST=postgresql
-      - RMQ_HOST=rabbitmq
-      - RMQ_PORT=5672
-      - RMQ_VHOST=/
-      - RMQ_USER=admin
-      - RMQ_PASSWORD=adminpassword
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+    env_file:
+      - ./configs/block-consumer/.env
 
     depends_on:
       postgres-db:
@@ -191,26 +181,18 @@ services:
         ipv4_address: 172.28.1.16
 
   block-polling-service:
-    build: ./block-polling-service
+    build: block-polling-service
     restart: on-failure
     container_name: block-polling-service
+
+    env_file:
+      - ./configs/block-polling-service/.env
 
     depends_on:
       rabbitmq:
         condition: service_healthy
       node_1:
         condition: service_started
-
-    environment:
-      - NODE_HOST=172.31.1.7
-      - NODE_RPC_PORT=8545
-      - GET_BLOCKS_TIMEOUT=60
-      - SEND_BLOCKS_TIMEOUT=20
-      - RMQ_HOST=rabbitmq
-      - RMQ_PORT=5672
-      - RMQ_USER=admin
-      - RMQ_PASSWORD=adminpassword
-      - RMQ_VHOST=/
 
     networks:
       bch_net:
