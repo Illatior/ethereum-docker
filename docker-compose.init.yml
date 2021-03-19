@@ -1,11 +1,5 @@
 version: "3.8"
 services:
-  bootnode:
-    entrypoint:
-      - /bin/sh
-      - -c
-      - bootnode -genkey /root/.ethereum/boot.key
-
   node_1:
     entrypoint:
       - /bin/sh

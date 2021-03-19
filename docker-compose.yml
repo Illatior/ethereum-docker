@@ -3,7 +3,7 @@ x-var:
   bootnode:
     &BOOTNODE_HOST 172.31.1.4
   bootnode_key:
-    &BOOTNODE_KEY 15104fc3531e821ddb09b302ba215cc5ff1412d9c092b0cb1685a5176e372f1a1c620de5bdf0e8eee971b4fd8362fc9031b13c104f857bb7661fc757498e39c1
+    &BOOTNODE_KEY 18c7649be749c2ad82806e1411a36014926af8e250fc740583251cb26982b7b9112894629c52ada6633d7154b743beadd46c87aedc202b10ecf769b8e9cd2c53
 services:
   bootnode:
     container_name: boot-node
@@ -19,6 +19,7 @@ services:
 
     volumes:
       - ./data/geth/bootnode:/root/.ethereum
+      - ./configs/bch/boot.key:/root/.ethereum/boot.key
 
     networks:
       bch_net:
@@ -60,6 +61,13 @@ services:
     restart: on-failure
     build: bch
 
+    env_file:
+      - .env
+
+    environment:
+      BOOTNODE_KEY: *BOOTNODE_KEY
+      BOOTNODE_HOST: *BOOTNODE_HOST
+
     entrypoint:
       - /bin/sh
       - -c
@@ -77,6 +85,13 @@ services:
     container_name: miner_1
     restart: on-failure
     build: bch
+
+    env_file:
+      - .env
+
+    environment:
+      BOOTNODE_KEY: *BOOTNODE_KEY
+      BOOTNODE_HOST: *BOOTNODE_HOST
 
     entrypoint:
       - /bin/sh
@@ -96,6 +111,13 @@ services:
     restart: on-failure
     build: bch
 
+    env_file:
+      - .env
+
+    environment:
+      BOOTNODE_KEY: *BOOTNODE_KEY
+      BOOTNODE_HOST: *BOOTNODE_HOST
+
     entrypoint:
       - /bin/sh
       - -c
@@ -113,6 +135,13 @@ services:
     container_name: miner_3
     restart: on-failure
     build: bch
+
+    env_file:
+      - .env
+
+    environment:
+      BOOTNODE_KEY: *BOOTNODE_KEY
+      BOOTNODE_HOST: *BOOTNODE_HOST
 
     entrypoint:
       - /bin/sh
