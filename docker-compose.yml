@@ -1,0 +1,262 @@
+version: "3.8"
+services:
+
+  node_1:
+    container_name: node_1
+    restart: on-failure
+    build: ./bch
+
+    env_file:
+      - .env
+
+    entrypoint:
+      - /bin/sh
+      - -c
+      - geth ${NODE_1}
+
+    healthcheck:
+      test: curl localhost:8545
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+    volumes:
+      - ./data/geth/node_1:/root/.ethereum
+      - ./configs/bch/genesis.json:/root/.ethereum/genesis.json
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.5
+
+  node_2:
+    container_name: node_2
+    restart: on-failure
+    build: ./bch
+
+    entrypoint:
+      - /bin/sh
+      - -c
+      - geth ${NODE_2}
+
+    volumes:
+      - ./data/geth/node_2:/root/.ethereum
+      - ./configs/bch/genesis.json:/root/.ethereum/genesis.json
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.6
+
+  miner_1:
+    container_name: miner_1
+    restart: on-failure
+    build: ./bch
+
+    volumes:
+      - ./data/geth/miner_1:/root/.ethereum
+      - ./configs/bch/genesis.json:/root/.ethereum/genesis.json
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.7
+
+  miner_2:
+    container_name: miner_2
+    restart: on-failure
+    build: ./bch
+
+    volumes:
+      - ./data/geth/miner_2:/root/.ethereum
+      - ./configs/bch/genesis.json:/root/.ethereum/genesis.json
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.8
+
+  miner_3:
+    container_name: miner_3
+    restart: on-failure
+    build: ./bch
+
+    volumes:
+      - ./data/geth/miner_3:/root/.ethereum
+      - ./configs/bch/genesis.json:/root/.ethereum/genesis.json
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.9
+
+  block-consumer:
+    build: ./block-consumer
+    restart: on-failure
+    container_name: block-consumer
+
+    environment:
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=postgresql
+      - RMQ_HOST=rabbitmq
+      - RMQ_PORT=5672
+      - RMQ_VHOST=/
+      - RMQ_USER=admin
+      - RMQ_PASSWORD=adminpassword
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      postgres_net:
+        ipv4_address: 172.29.1.16
+      rmq_net:
+        ipv4_address: 172.30.1.16
+      redis_net:
+        ipv4_address: 172.28.1.16
+
+  block-polling-service:
+    build: ./block-polling-service
+    restart: on-failure
+    container_name: block-polling-service
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      node_1:
+        condition: service_started
+
+    environment:
+      - NODE_HOST=172.31.1.5
+      - NODE_RPC_PORT=8545
+      - GET_BLOCKS_TIMEOUT=10
+      - SEND_BLOCKS_TIMEOUT=5
+      - RMQ_HOST=rabbitmq
+      - RMQ_PORT=5672
+      - RMQ_USER=admin
+      - RMQ_PASSWORD=adminpassword
+      - RMQ_VHOST=/
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.16
+      rmq_net:
+        ipv4_address: 172.30.1.17
+
+  rabbitmq:
+    container_name: rabbitmq
+    restart: on-failure
+    image: "rabbitmq:3-management-alpine"
+    hostname: rabbitmq
+
+    volumes: 
+      - ./configs/rmq/definitions.json:/etc/rabbitmq/definitions.json
+      - ./configs/rmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./data/rmq:/var/lib/rabbitmq/mnesia/rabbit@rabbitmq
+      - ./logs/rabbitmq:/var/log/rabbitmq/log
+
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 30s
+      retries: 3
+
+    ports:
+      - 15672:15672
+    networks:
+      rmq_net:
+        ipv4_address: 172.30.1.4
+  
+  redis:
+    container_name: redis
+    restart: on-failure
+    image: "redis:alpine"
+    hostname: redis
+
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+
+    volumes:
+      - ./data/redis:/var/lib/redis
+      - ./configs/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./logs/redis/:/var/log/redis/
+
+    env_file:
+      - ./configs/redis/.env
+
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+    networks:
+      redis_net:
+        ipv4_address: 172.28.1.4
+  
+  postgres-db:
+    container_name: postgresql
+    restart: on-failure
+    image: "postgres:9.6.21-alpine"
+
+    env_file:
+      - ./configs/postgres/.env
+
+    volumes:
+      - ./configs/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./data/postgres/pgsql:/var/lib/postgresql/data
+
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      postgres_net:
+        ipv4_address: 172.29.1.4
+
+
+  postgres-admin:
+    container_name: pgadmin
+    restart: on-failure
+    image: dpage/pgadmin4
+
+    volumes:
+      - ./data/postgres/admin:/root/.pgadmin
+
+    env_file:
+      - ./configs/postgres/.pg-admin.env
+
+    networks:
+      postgres_net:
+        ipv4_address: 172.29.1.5
+
+networks:
+  bch_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.0.0/16
+          gateway: 172.31.0.1
+
+  postgres_net:
+    ipam:
+      driver: default
+      config: 
+        - subnet: 172.29.0.0/16
+
+  rmq_net:
+    ipam:
+      driver: default
+      config: 
+        - subnet: 172.30.0.0/16
+
+  redis_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
