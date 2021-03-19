@@ -1,40 +1,30 @@
 version: "3.8"
 services:
   node_1:
-    build: ./bch
-
     entrypoint:
       - /bin/sh
       - -c
       - geth --datadir /root/.ethereum init /root/.ethereum/genesis.json
 
   node_2:
-    build: ./bch
-
     entrypoint:
       - /bin/sh
       - -c
       - geth --datadir /root/.ethereum init /root/.ethereum/genesis.json
 
   miner_1:
-    build: ./bch
-
     entrypoint:
       - /bin/sh
       - -c
       - geth --datadir /root/.ethereum init /root/.ethereum/genesis.json
 
   miner_2:
-    build: ./bch
-
     entrypoint:
       - /bin/sh
       - -c
       - geth --datadir /root/.ethereum init /root/.ethereum/genesis.json
 
   miner_3:
-    build: ./bch
-
     entrypoint:
       - /bin/sh
       - -c

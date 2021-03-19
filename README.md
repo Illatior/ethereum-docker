@@ -39,22 +39,6 @@ docker-compose up -d
 ```
 6. Enjoy!
 
-#### Note
- If you want to start a mining with mining nodes follow this steps:
-1. initialize nodes
-1. start it with 
-```commandline
-docker-compose up -d
-```
-3. connect to every mining node and create new account for mining
-```commandline
-docker-compose exec {MINING_NODE_CONTAINER_NAME} sh
-
-geth --datadir /root/.ethereum account new --password 123
-```
-4. Get an given address, go to .env and for every mining node add param `--miner.etherbase {ADDRESS AFTER CREATION}` in the end
-1. Restart all node containers
-
 ## Configuration
 
 Default [docker-compose.yml](./docker-compose.yml) run services isolated, only `15672` port, used to get access to management panel of rabbitmq, are available. 
