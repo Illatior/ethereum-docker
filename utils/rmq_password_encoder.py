@@ -2,7 +2,6 @@ from __future__ import print_function
 import base64
 import os
 import hashlib
-import struct
 import sys
 
 password = sys.argv[1]

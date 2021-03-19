@@ -106,5 +106,17 @@ for access to the redis and check the data.
 
 ## Other
 
+### Utils
+
+There is only one util - [`rmq_password_encoder`](./utils/rmq_password_encoder.py).
+This used to encode your password for rmq and then pass to [`configuration`](./configs/rmq/definitions.json).
+To run it you need to previously install `python` version `3+`.
+After installing you are able to run it with
+```commandline
+python3 rmq_password_encoder.py {YOUR_PASSWORD_TO_ENCODE}
+```
+
+### Hot to optimize python-based service images
+
 Python services provided by this repository can be built via [multi-stage building](https://docs.docker.com/develop/develop-images/multistage-build/)
 if you are ready to face manual linking python source codes for used libraries to gcc compiler ([guide](https://stackoverflow.com/questions/39913847/is-there-a-way-to-compile-a-python-application-into-static-binary)).
