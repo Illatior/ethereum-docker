@@ -92,6 +92,7 @@ def write_block_to_db(block: Block):
                 blocks(block_id, block_time)
             VALUES
                 ({})
+            ON CONFLICT DO NOTHING;
             '''.format(str(block))
 
         cursor.execute(sql)

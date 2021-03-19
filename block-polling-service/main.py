@@ -1,16 +1,16 @@
 import os
 import pika
+import threading
 
 from time import sleep
 from web3 import Web3
-from threading import Thread, Lock
 
 get_blocks_timeout = int(os.environ['GET_BLOCKS_TIMEOUT'])
 send_blocks_timeout = int(os.environ['SEND_BLOCKS_TIMEOUT'])
 
 threads_stopped = False
 threads = []
-lock = Lock()
+lock = threading.Lock()
 
 blocks_to_send = []
 last_sent_block = -1
@@ -65,8 +65,9 @@ def get_blocks_task(w3):
             break
 
         last_block = get_block(w3)
-        blocks_to_send.insert(0, last_block)
-        if int(last_block['number']) - last_sent_block > 1:
+        if int(last_block['number']) - last_sent_block == 1:
+            blocks_to_send.insert(0, last_block)
+        elif int(last_block['number']) - last_sent_block > 1:
             for block_number in reversed(range(last_sent_block, int(last_block['number']))):
                 blocks_to_send.append(0, get_block(w3, block_number))
 
@@ -85,8 +86,9 @@ def send_blocks_task(channel):
                                   routing_key='r.notification.blocks',
                                   body=str(converted_block))
 
-        last_sent_block = blocks_to_send[-1]['number']
-        blocks_to_send = []
+        if len(blocks_to_send) > 0:
+            last_sent_block = blocks_to_send[-1]['number']
+            blocks_to_send = []
 
         lock.release()
 
@@ -100,13 +102,16 @@ def main():
     w3 = init_w3()
     rmq = init_rmq()
 
-    get_blocks_thread = Thread(target=get_blocks_task, args=[w3])
-    send_blocks_thread = Thread(target=send_blocks_task, args=[rmq])
+    print('Init completed. Starting threads')
+
+    get_blocks_thread = threading.Thread(target=get_blocks_task, args=[w3])
     threads.append(get_blocks_thread)
+    send_blocks_thread = threading.Thread(target=send_blocks_task, args=[rmq])
     threads.append(send_blocks_thread)
 
     for thread in threads:
-        thread.run()
+        thread.start()
+    print('Threads started')
 
     try:
         while True:
