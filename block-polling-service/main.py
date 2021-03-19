@@ -65,11 +65,15 @@ def get_blocks_task(w3):
             break
 
         last_block = get_block(w3)
+        print('last block - {}\nlast send block - {}\n\n'.format(last_block['number'], last_sent_block))
         if int(last_block['number']) - last_sent_block == 1:
             blocks_to_send.insert(0, last_block)
         elif int(last_block['number']) - last_sent_block > 1:
-            for block_number in reversed(range(last_sent_block, int(last_block['number']))):
-                blocks_to_send.append(0, get_block(w3, block_number))
+            for block_number in range(last_sent_block, int(last_block['number'])):
+                if block_number < 0:
+                    continue
+
+                blocks_to_send.insert(0, w3.eth.get_block(block_number))
 
 
 def send_blocks_task(channel):

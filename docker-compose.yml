@@ -1,6 +1,5 @@
 version: "3.8"
 services:
-
   node_1:
     container_name: node_1
     restart: on-failure
@@ -146,10 +145,10 @@ services:
         condition: service_started
 
     environment:
-      - NODE_HOST=172.31.1.5
+      - NODE_HOST=172.31.1.7
       - NODE_RPC_PORT=8545
-      - GET_BLOCKS_TIMEOUT=10
-      - SEND_BLOCKS_TIMEOUT=5
+      - GET_BLOCKS_TIMEOUT=60
+      - SEND_BLOCKS_TIMEOUT=20
       - RMQ_HOST=rabbitmq
       - RMQ_PORT=5672
       - RMQ_USER=admin
