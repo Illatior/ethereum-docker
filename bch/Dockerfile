@@ -5,14 +5,13 @@ RUN apk update \
 
 ADD ./go-ethereum /src/go-ethereum
 RUN cd /src/go-ethereum \
-    && make clean all
+    && make clean geth
 RUN echo $(ls -l /src/go-ethereum/build/bin)
 
 
 FROM alpine:latest
 
 COPY --from=builder /src/go-ethereum/build/bin/geth /usr/local/bin
-COPY --from=builder /src/go-ethereum/build/bin/bootnode /usr/local/bin
 
 RUN ln -s /usr/local/bin/geth /node
 
