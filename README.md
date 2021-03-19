@@ -79,7 +79,7 @@ The network is specified in [docker-compose.yaml](./docker-compose.yaml). If you
 
 ## Working with nodes from docker host
 
-`ethereal` uses [geth](https://github.com/ethereum/go-ethereum/wiki/geth) under the hood as its
+`ethereum-docker` uses [geth](https://github.com/ethereum/go-ethereum/wiki/geth) under the hood as its
 default ethereum node implementation.
 
 
