@@ -1,12 +1,40 @@
 version: "3.8"
+x-var:
+  bootnode:
+    &BOOTNODE_HOST 172.31.1.4
+  bootnode_key:
+    &BOOTNODE_KEY 15104fc3531e821ddb09b302ba215cc5ff1412d9c092b0cb1685a5176e372f1a1c620de5bdf0e8eee971b4fd8362fc9031b13c104f857bb7661fc757498e39c1
 services:
+  bootnode:
+    container_name: boot-node
+    restart: on-failure
+    build:
+      context: ./bch
+      dockerfile: Dockerfile-bootnode
+
+    entrypoint:
+      - /bin/sh
+      - -c
+      - bootnode ${BOOTNODE}
+
+    volumes:
+      - ./data/geth/bootnode:/root/.ethereum
+
+    networks:
+      bch_net:
+        ipv4_address: 172.31.1.4
+
   node_1:
     container_name: node_1
     restart: on-failure
-    build: ./bch
+    build: bch
 
     env_file:
       - .env
+
+    environment:
+      BOOTNODE_KEY: *BOOTNODE_KEY
+      BOOTNODE_HOST: *BOOTNODE_HOST
 
     entrypoint:
       - /bin/sh
@@ -30,7 +58,7 @@ services:
   node_2:
     container_name: node_2
     restart: on-failure
-    build: ./bch
+    build: bch
 
     entrypoint:
       - /bin/sh
@@ -48,7 +76,7 @@ services:
   miner_1:
     container_name: miner_1
     restart: on-failure
-    build: ./bch
+    build: bch
 
     entrypoint:
       - /bin/sh
@@ -66,7 +94,7 @@ services:
   miner_2:
     container_name: miner_2
     restart: on-failure
-    build: ./bch
+    build: bch
 
     entrypoint:
       - /bin/sh
@@ -84,7 +112,7 @@ services:
   miner_3:
     container_name: miner_3
     restart: on-failure
-    build: ./bch
+    build: bch
 
     entrypoint:
       - /bin/sh
