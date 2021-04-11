@@ -33,11 +33,13 @@ sh init.sh
 That script will build and run `geth` from official [`go-ethereum` repo](https://github.com/ethereum/go-ethereum) in `init` mode.
 This needed to initialize ethereum nodes with needed `genesis.json`.
 
-5. Run docker containers
+5. Setup bootnode key. 
+
+6. Run docker containers
 ```commandline
 docker-compose up -d
 ```
-6. Enjoy!
+7. Enjoy!
 
 ## Configuration
 
